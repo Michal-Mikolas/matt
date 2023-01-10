@@ -7,12 +7,11 @@ from datetime import datetime
 import pytesseract
 import re
 import pyperclip
-from loggers import Logger, FakeLogger
 
 class Matt(object):
-	def __init__(self, cache_file:str, logger:Logger=None, timeout:int=20, grayscale:bool=False):
+	def __init__(self, cache_file:str, logger:callable=None, timeout:int=20, grayscale:bool=False):
 		self.cache_file = cache_file
-		self.logger = logger if logger else FakeLogger()
+		self.logger = logger if logger else (lambda msg: print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} {msg}"))
 		self.timeout = timeout
 		self.grayscale = grayscale
 
@@ -50,7 +49,7 @@ class Matt(object):
 
 		# Finish & serve what we've got
 		if not pos:
-			self.logger.log("Waiting for %s timed out after %f seconds" % (img, time.time() - start))
+			self.logger("Waiting for %s timed out after %f seconds" % (img, time.time() - start))
 			raise TimeoutError(str(ui))
 
 		return self.get_center(pos)
@@ -100,7 +99,7 @@ class Matt(object):
 
 		# Finish & serve what we've got
 		if not result:
-			self.logger.log("Waiting for %s timed out after %f seconds" % (str(args), time.time() - start))
+			self.logger("Waiting for %s timed out after %f seconds" % (str(args), time.time() - start))
 			raise TimeoutError(str(args))
 
 		return result
@@ -146,11 +145,19 @@ class Matt(object):
 		pos = self.wait(ui, timeout=timeout)
 		pyautogui.doubleClick(pos[0] + x, pos[1] + y)
 
+	def right_click(self, ui=None, x=0, y=0, timeout=None):
+		if not ui:
+			return pyautogui.click(button='right')
+
+		pos = self.wait(ui, timeout=timeout)
+		pyautogui.click(pos[0] + x, pos[1] + y, button='right')
+
 	def move_to(self, ui, x=0, y=0, timeout=None):
 		pos = self.wait(ui, timeout=timeout)
 		pyautogui.moveTo(pos[0] + x, pos[1] + y)
 
 	def hotkey(self, *args, **kwargs):
+		'''Example: matt.hotkey('alt', 'tab')'''
 		pyautogui.hotkey(*args, **kwargs)
 
 	def typewrite(self, message, interval=0.0):
@@ -203,7 +210,7 @@ class Matt(object):
 		regions = self.cache('regions') or {}
 
 		if img not in regions:
-			# self.logger.log('get_region("%s"): %s' % (img, 'None'))  ###
+			# self.logger('get_region("%s"): %s' % (img, 'None'))  ###
 			return None
 
 		region = regions[img]
