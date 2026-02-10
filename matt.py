@@ -20,9 +20,23 @@ class Matt(object):
 		self.ui = {}
 
 	def set_ui(self, ui):
+		"""
+		Sets the UI elements dictionary.
+
+		:param ui: A dictionary where keys are element names and values are file paths to images (or lists of paths).
+		"""
 		self.ui = ui
 
 	def wait(self, ui, timeout=None, step=0.1):
+		"""
+		Waits for a UI element to appear on the screen.
+
+		:param ui: The name of the UI element (defined in set_ui) or a list of image paths.
+		:param timeout: Maximum time to wait in seconds (defaults to self.timeout).
+		:param step: Interval between checks in seconds.
+		:return: The center coordinates (x, y) of the found element.
+		:raises TimeoutError: If the element is not found within the timeout.
+		"""
 		# Default params
 		ui = self.get_ui(ui)
 		timeout = timeout or self.timeout
@@ -55,6 +69,15 @@ class Matt(object):
 		return self.get_center(pos)
 
 	def which(self, *args, timeout=None, step=0.1):
+		"""
+		Waits for any one of the specified UI elements to appear.
+
+		:param args: Names of UI elements to look for.
+		:param timeout: Maximum time to wait in seconds.
+		:param step: Interval between checks in seconds.
+		:return: A tuple (element_name, (x, y)) of the first found element.
+		:raises TimeoutError: If none of the elements are found.
+		"""
 		# Default params
 		timeout = timeout or self.timeout
 		step = step or 0.1
@@ -104,6 +127,144 @@ class Matt(object):
 
 		return result
 
+	def click(self, ui=None, x=0, y=0, timeout=None):
+		"""
+		Clicks on a UI element or the current mouse position.
+
+		:param ui: The name of the UI element to click. If None, clicks at current position.
+		:param x: Horizontal offset from the center of the element.
+		:param y: Vertical offset from the center of the element.
+		:param timeout: Maximum time to wait for the element to appear.
+		"""
+		if not ui:
+			return pyautogui.click()
+
+		pos = self.wait(ui, timeout=timeout)
+		pyautogui.click(pos[0] + x, pos[1] + y)
+
+	def double_click(self, ui=None, x=0, y=0, timeout=None):
+		"""
+		Double-clicks on a UI element or the current mouse position.
+
+		:param ui: The name of the UI element to double-click. If None, clicks at current position.
+		:param x: Horizontal offset from the center of the element.
+		:param y: Vertical offset from the center of the element.
+		:param timeout: Maximum time to wait for the element to appear.
+		"""
+		if not ui:
+			return pyautogui.doubleClick()
+
+		pos = self.wait(ui, timeout=timeout)
+		pyautogui.doubleClick(pos[0] + x, pos[1] + y)
+
+	def right_click(self, ui=None, x=0, y=0, timeout=None):
+		"""
+		Right-clicks on a UI element or the current mouse position.
+
+		:param ui: The name of the UI element to right-click. If None, clicks at current position.
+		:param x: Horizontal offset from the center of the element.
+		:param y: Vertical offset from the center of the element.
+		:param timeout: Maximum time to wait for the element to appear.
+		"""
+		if not ui:
+			return pyautogui.click(button='right')
+
+		pos = self.wait(ui, timeout=timeout)
+		pyautogui.click(pos[0] + x, pos[1] + y, button='right')
+
+	def move_to(self, ui, x=0, y=0, timeout=None):
+		"""
+		Moves the mouse cursor to a UI element.
+
+		:param ui: The name of the UI element to move to.
+		:param x: Horizontal offset from the center of the element.
+		:param y: Vertical offset from the center of the element.
+		:param timeout: Maximum time to wait for the element to appear.
+		"""
+		pos = self.wait(ui, timeout=timeout)
+		pyautogui.moveTo(pos[0] + x, pos[1] + y)
+
+	def hotkey(self, *args, **kwargs):
+		"""
+		Presses a hotkey combination (e.g., 'ctrl', 'c').
+
+		:param args: The keys to press in order.
+		"""
+		'''Example: matt.hotkey('alt', 'tab')'''
+		pyautogui.hotkey(*args, **kwargs)
+
+	def typewrite(self, message, interval=0.0):
+		"""
+		Types a message.
+
+		:param message: The string to type.
+		:param interval: Delay between each character.
+		"""
+		pyautogui.typewrite(message, interval)
+
+	def mouse_down(self):
+		"""
+		Presses the mouse button down (without releasing).
+		"""
+		pyautogui.mouseDown()
+
+	def mouse_up(self):
+		"""
+		Releases the mouse button.
+		"""
+		pyautogui.mouseUp()
+
+	def screenshot(self, filename = None, region = None):
+		"""
+		Takes a screenshot.
+
+		:param filename: File path to save the screenshot. If None, returns the image object.
+		:param region: A tuple (left, top, width, height) of the region to capture.
+		:return: The PIL image object.
+		"""
+		if filename:
+			directory = os.path.dirname(filename)
+			Path(directory).mkdir(parents=True, exist_ok=True)
+
+		return pyautogui.screenshot(filename, region=region)
+
+	def ocr(self, region = None):
+		"""
+		Performs Optical Character Recognition (OCR) on a region of the screen or the whole screen.
+
+		:param region: A tuple (left, top, width, height) to capture.
+		:return: The recognized text with non-digit characters removed.
+		"""
+		# img = pyautogui.screenshot('screenshots\\ps.png', region=region)
+		img = pyautogui.screenshot(region=region)
+		result = pytesseract.image_to_string(img)
+		result = re.sub(r'[^\d]', '', result)
+
+		return result
+
+	def select(self, region):
+		"""
+		Selects a region by dragging the mouse.
+
+		:param region: A tuple (start_x, start_y, width, height). The mouse drags from (start_x, start_y) by (width, height).
+		"""
+		pyautogui.moveTo(region[0], region[1])
+		pyautogui.mouseDown()
+		pyautogui.move(region[2], region[3])
+		pyautogui.mouseUp()
+
+	def copy(self):
+		"""
+		Performs a copy operation (Ctrl+C) and returns the clipboard content.
+
+		:return: The content of the clipboard.
+		"""
+		pyautogui.hotkey('ctrl', 'c')
+		time.sleep(0.2)
+		result = pyperclip.paste()
+
+		return result
+
 	def get_ui(self, ui):
 		if (type(ui).__name__ == 'str') and (ui in self.ui):
 			ui = self.ui[ui]
@@ -130,72 +291,6 @@ class Matt(object):
 			self.update_region(img, pos)
 
 		return pos
-
-	def click(self, ui=None, x=0, y=0, timeout=None):
-		if not ui:
-			return pyautogui.click()
-
-		pos = self.wait(ui, timeout=timeout)
-		pyautogui.click(pos[0] + x, pos[1] + y)
-
-	def double_click(self, ui=None, x=0, y=0, timeout=None):
-		if not ui:
-			return pyautogui.doubleClick()
-
-		pos = self.wait(ui, timeout=timeout)
-		pyautogui.doubleClick(pos[0] + x, pos[1] + y)
-
-	def right_click(self, ui=None, x=0, y=0, timeout=None):
-		if not ui:
-			return pyautogui.click(button='right')
-
-		pos = self.wait(ui, timeout=timeout)
-		pyautogui.click(pos[0] + x, pos[1] + y, button='right')
-
-	def move_to(self, ui, x=0, y=0, timeout=None):
-		pos = self.wait(ui, timeout=timeout)
-		pyautogui.moveTo(pos[0] + x, pos[1] + y)
-
-	def hotkey(self, *args, **kwargs):
-		'''Example: matt.hotkey('alt', 'tab')'''
-		pyautogui.hotkey(*args, **kwargs)
-
-	def typewrite(self, message, interval=0.0):
-		pyautogui.typewrite(message, interval)
-
-	def mouse_down(self):
-		pyautogui.mouseDown()
-
-	def mouse_up(self):
-		pyautogui.mouseUp()
-
-	def screenshot(self, filename = None, region = None):
-		if filename:
-			directory = os.path.dirname(filename)
-			Path(directory).mkdir(parents=True, exist_ok=True)
-
-		return pyautogui.screenshot(filename, region=region)
-
-	def ocr(self, region = None):
-		# img = pyautogui.screenshot('screenshots\\ps.png', region=region)
-		img = pyautogui.screenshot(region=region)
-		result = pytesseract.image_to_string(img)
-		result = re.sub(r'[^\d]', '', result)
-
-		return result
-
-	def select(self, region):
-		pyautogui.moveTo(region[0], region[1])
-		pyautogui.mouseDown()
-		pyautogui.move(region[2], region[3])
-		pyautogui.mouseUp()
-
-	def copy(self):
-		pyautogui.hotkey('ctrl', 'c')
-		time.sleep(0.2)
-		result = pyperclip.paste()
-
-		return result
 
 
 	######
